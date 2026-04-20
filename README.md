@@ -27,19 +27,19 @@ Our project is strictly organized to separate core logic, execution scripts, and
 
 source/: Contains the core sensor implementation.
 
--multiranger_deck.py, multiranger_deck_cfg.py, multiranger_deck_data.py: The main sensor classes     and data buffers extending Isaac Lab's RayCaster.
+- multiranger_deck.py, multiranger_deck_cfg.py, multiranger_deck_data.py: The main sensor classes     and data buffers extending Isaac Lab's RayCaster.
 
--patterns/multiranger_deck_patterns.py: The mathematical logic generating the 5-cone ray             distribution.
+- patterns/multiranger_deck_patterns.py: The mathematical logic generating the 5-cone ray             distribution.
 
 scripts/: Contains the executable demonstrations and controllers.
 
-quacopter_control/: Contains the flight_controller.py used for dynamic movement overrides.
+- quacopter_control/: Contains the flight_controller.py used for dynamic movement overrides.
 
-demo1_wall_validation.py: Static validation against simple walls.
+- demo1_wall_validation.py: Static validation against simple walls.
 
-demo2_wall_validation.py: Validation of the ToF minimum-distance algorithm using offset walls.
+- demo2_wall_validation.py: Validation of the ToF minimum-distance algorithm using offset walls.
 
-demo3_pyramid_hover.py: Dynamic terrain-following validation over pyramids.
+- demo3_pyramid_hover.py: Dynamic terrain-following validation over pyramids.
 
 multimedia/: Contains telemetry plots and screenshots of the simulations in action.
 
