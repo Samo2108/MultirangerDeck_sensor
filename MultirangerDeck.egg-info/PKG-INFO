@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: MultirangerDeck
+Version: 1.0.0
+Summary: Custom Crazyflie environments and Multiranger sensors for Isaac Lab.
+Author: Alexandru Zaporojanu, Luca Samorì and Tommaso Tieri
+Requires-Dist: matplotlib
+Requires-Dist: imageio
+Dynamic: author
+Dynamic: requires-dist
+Dynamic: summary
