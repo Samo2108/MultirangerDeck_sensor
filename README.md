@@ -53,16 +53,16 @@ Tests the sensor's basic directional measurements in a static environment.
 
 Bash
 python scripts/demo1_wall_validation.py
+
 Demo 2: Offset Wall Algorithm Validation
 Demonstrates the sensor correctly returning the closest hit within a generated 10-ray cone.
 
-Bash
-python scripts/demo2_wall_validation.py
+Bash python scripts/demo2_wall_validation.py
+
 Demo 3: Dynamic Pyramid Hover (Terrain Following)
 A dynamic simulation where a drone uses the Z-down sensor reading in a control loop to maintain a stable 30cm altitude over uneven pyramidal terrain.
 
-Bash
-python scripts/demo3_pyramid_hover.py
+Bash python scripts/demo3_pyramid_hover.py
 
 ### 4. Contributions
 Alexandru Zaporojanu, Luca Samorì, Tommaso Tieri.
