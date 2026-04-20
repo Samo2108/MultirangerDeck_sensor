@@ -22,7 +22,7 @@ Since this project is packaged with a `setup.py`, you can install it into your I
    ```bash
    pip install -e .
 
-2. Repository Structure
+### 2. Repository Structure
 Our project is strictly organized to separate core logic, execution scripts, and documentation:
 
 source/: Contains the core sensor implementation.
@@ -45,7 +45,7 @@ multimedia/: Contains telemetry plots and screenshots of the simulations in acti
 
 presentation/: Contains the final project slides (Original PPTX and PDF formats).
 
-3. Demo Instructions
+### 3. Demo Instructions
 We have prepared three progressive demonstrations to validate the sensor. To run them, open your terminal, activate the Isaac Lab environment, and execute the scripts from the repository root.
 
 Demo 1: Basic Wall Validation
@@ -63,10 +63,11 @@ A dynamic simulation where a drone uses the Z-down sensor reading in a control l
 
 Bash
 python scripts/demo3_pyramid_hover.py
-4. Contributions
+
+### 4. Contributions
 Alexandru Zaporojanu, Luca Samorì, Tommaso Tieri.
 
-5. Credits
+### 5. Credits
 Framework: Built using the NVIDIA Isaac Lab framework.
 
 Hardware Inspiration: Logic and configuration inspired by the Bitcraze Crazyflie Multiranger Deck.
