@@ -30,12 +30,12 @@ MultirangerDeck/
 ├── setup.py                       # Python package installation script
 │
 ├── source/                        # Core Multiranger Deck Sensor Package
-│   ├── _init_.py
+│   ├── __init__.py
 │   ├── multiranger_deck.py        # Main raycaster sensor class
 │   ├── multiranger_deck_cfg.py    # Sensor configurations
 │   ├── multiranger_deck_data.py   # Data container for range outputs
 │   └── patterns/                  # Raycast pattern generators
-│       ├── _init_.py
+│       ├── __init__.py
 │       └── multiranger_deck_patterns.py # Math for the 27° 5-cone FoV
 │
 ├── scripts/                       # Executable Isaac Lab Scenarios
@@ -47,13 +47,6 @@ MultirangerDeck/
 │       └── flight_controller.py   # Cascaded PID (Altitude & Pitch)
 │
 └── multimedia/                    # Output telemetry, plots, and videos
-    ├── demo1/
-    │   └── wall_distance_demo.png
-    ├── demo2/
-    │   ├── wall_distance_demo.png
-    │   └── wall_distance_demo_plt.png
-    └── demo3/
-        └── pyramid_hover_telemetry.png
 ```
 
 ### 3. Usage
