@@ -15,9 +15,15 @@ This repository contains the implementation of a custom Time-of-Flight (ToF) Mul
 * **Python:** Python 3.10+.
 
 ### Installation
-Since this project is packaged with a `setup.py`, you can install it into your Isaac Lab environment as an editable package.
+This is an "out of tree" package so it must be installed outside of the IsaacLab directory. The process is as follows:
 1. Install Isaac Lab following the [official guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html)
 2. Activate your Isaac Lab virtual environment.
+3. Navigate to the root of the repository's folder.
+4. From terminal run:
+```bash
+pip install -e .
+```
+   so that the repositories packages can be accessed from anywhere (e.g. the numpy libraries)
 
 
 ### 2. Repository Structure
@@ -30,12 +36,12 @@ MultirangerDeck/
 ├── setup.py                       # Python package installation script
 │
 ├── source/                        # Core Multiranger Deck Sensor Package
-│   ├── _init_.py
+│   ├── __init__.py
 │   ├── multiranger_deck.py        # Main raycaster sensor class
 │   ├── multiranger_deck_cfg.py    # Sensor configurations
 │   ├── multiranger_deck_data.py   # Data container for range outputs
 │   └── patterns/                  # Raycast pattern generators
-│       ├── _init_.py
+│       ├── __init__.py
 │       └── multiranger_deck_patterns.py # Math for the 27° 5-cone FoV
 │
 ├── scripts/                       # Executable Isaac Lab Scenarios
