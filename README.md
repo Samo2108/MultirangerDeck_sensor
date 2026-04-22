@@ -14,81 +14,68 @@ This repository contains the implementation of a custom Time-of-Flight (ToF) Mul
 * **Framework:** NVIDIA Isaac Lab (installed from source).
 * **Python:** Python 3.10+.
 
-### Setup Instructions
+### Installation
 Since this project is packaged with a `setup.py`, you can install it into your Isaac Lab environment as an editable package.
 1. Install Isaac Lab following the [official guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html)
-1. Activate your Isaac Lab virtual environment.
-2. Navigate to the root of this repository.
-3. Run the installation command:
-   ```bash
-   pip install -e .
+2. Activate your Isaac Lab virtual environment.
+
 
 ### 2. Repository Structure
-Our project is strictly organized to separate core logic, execution scripts, and documentation:
+Project is strictly organized to separate core logic, execution scripts, and documentation:
 
-source/: Contains the core sensor implementation.
+MultirangerDeck/
+├── .gitignore                     # Untracked files and cache exclusions
+├── README.md                      # Project documentation
+├── setup.py                       # Python package installation script
+│
+├── source/                        # Core Multiranger Deck Sensor Package
+│   ├── _init_.py
+│   ├── multiranger_deck.py        # Main raycaster sensor class
+│   ├── multiranger_deck_cfg.py    # Sensor configurations
+│   ├── multiranger_deck_data.py   # Data container for range outputs
+│   └── patterns/                  # Raycast pattern generators
+│       ├── _init_.py
+│       └── multiranger_deck_patterns.py # Math for the 27° 5-cone FoV
+│
+├── scripts/                       # Executable Isaac Lab Scenarios
+│   ├── demo1_wall_validation.py   # Static teleportation accuracy test
+│   ├── demo2_wall_validation.py   # Dynamic perfect-hover wall test
+│   ├── demo3_pyramid_hover.py     # Forward cruise and altitude test
+│   │
+│   └── quacopter_control/         # Flight controller logic
+│       └── flight_controller.py   # Cascaded PID (Altitude & Pitch)
+│
+└── multimedia/                    # Output telemetry, plots, and videos
+    ├── demo1/
+    │   └── wall_distance_demo.png
+    ├── demo2/
+    │   ├── wall_distance_demo.png
+    │   └── wall_distance_demo_plt.png
+    └── demo3/
+        └── pyramid_hover_telemetry.png
 
-- multiranger_deck.py, multiranger_deck_cfg.py, multiranger_deck_data.py: The main sensor classes     and data buffers extending Isaac Lab's RayCaster.
 
-- patterns/multiranger_deck_patterns.py: The mathematical logic generating the 5-cone ray             distribution.
-
-scripts/: Contains the executable demonstrations and controllers.
-
-- quacopter_control/: Contains the flight_controller.py used for dynamic movement overrides.
-
-- demo1_wall_validation.py: Static validation against simple walls.
-
-- demo2_wall_validation.py: Validation of the ToF minimum-distance algorithm using offset walls.
-
-- demo3_pyramid_hover.py: Dynamic terrain-following validation over pyramids.
-
-multimedia/: Contains telemetry plots and screenshots of the simulations in action.
-
-presentation/: Contains the final project slides (Original PPTX and PDF formats).
-
-CrazyPlayGround/
-├── 
-│   ├──                   # Self-contained cascade PID controller
-│   │   ├── 
-│   │   ├── 
-│   │   ├── 
-│   │   ├──              # PID gains & physics params
-│   │   └── 
-│   └── tasks/direct/
-│       ├── hovering/                   # Single-drone envs
-│       │   ├── pos_hovering.py
-│       │   ├── vel_hovering.py
-│       │   ├── att_hovering.py
-│       │   └── agents/
-│       ├── track/
-│       ├── drone_racing/
-│       ├── drone_racing_marl/
-│       ├── formation/
-│       ├── fly_through/
-│       └── teleoperation/
-└── scripts/
-    ├── skrl/
-    ├── rsl_rl/
-    ├── sb3/
-    └── random_agent.py
-### 3. Demo Instructions
+### 3. Usage
 We have prepared three progressive demonstrations to validate the sensor. To run them, open your terminal, activate the Isaac Lab environment, and execute the scripts from the repository root.
 
-Demo 1: Basic Wall Validation
-Tests the sensor's basic directional measurements in a static environment.
+1.  Navigate to the root of isaac lab directory:
+   `cd ~/IsaacLab`
 
-Bash
-python scripts/demo1_wall_validation.py
+2. To run the demo simmulation:
+   Demo 1: Basic Wall Validation
+   Tests the sensor's basic directional measurements in a static environment.
 
-Demo 2: Offset Wall Algorithm Validation
-Demonstrates the sensor correctly returning the closest hit within a generated 10-ray cone.
+   `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo1_wall_validation.py --headless --enable_cameras`
 
-Bash python scripts/demo2_wall_validation.py
+   Demo 2: Offset Wall Algorithm Validation
+   Demonstrates the sensor correctly returning the closest hit within a generated 10-ray cone.
 
-Demo 3: Dynamic Pyramid Hover (Terrain Following)
-A dynamic simulation where a drone uses the Z-down sensor reading in a control loop to maintain a stable 30cm altitude over uneven pyramidal terrain.
+   `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo2_wall_validation.py --headless --enable_cameras`
 
-Bash python scripts/demo3_pyramid_hover.py
+   Demo 3: Dynamic Pyramid Hover (Terrain Following)
+   A dynamic simulation where a drone uses the Z-down sensor reading in a control loop to maintain a stable 30cm altitude over uneven pyramidal terrain.
+   
+   `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo3_pyramid_hover.py --headless --enable_cameras`
 
 ### 4. Contributions
 Alexandru Zaporojanu, Luca Samorì, Tommaso Tieri.
