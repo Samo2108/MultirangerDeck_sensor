@@ -1,0 +1,30 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.env
+venv/
+env/
+
+# Isaac Lab / Omniverse caches
+*.usd
+*.usda
+*.usdc
+
+# Output media (Don't upload massive videos or plots to GitHub!)
+*.mp4
+*.png
+*.jpg
+output_images/
+
+# Package builds
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+*.egg-info/
+*.egg
