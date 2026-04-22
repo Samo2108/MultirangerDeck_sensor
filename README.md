@@ -16,6 +16,7 @@ This repository contains the implementation of a custom Time-of-Flight (ToF) Mul
 
 ### Setup Instructions
 Since this project is packaged with a `setup.py`, you can install it into your Isaac Lab environment as an editable package.
+1. Install Isaac Lab following the [official guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html)
 1. Activate your Isaac Lab virtual environment.
 2. Navigate to the root of this repository.
 3. Run the installation command:
@@ -45,6 +46,31 @@ multimedia/: Contains telemetry plots and screenshots of the simulations in acti
 
 presentation/: Contains the final project slides (Original PPTX and PDF formats).
 
+CrazyPlayGround/
+├── 
+│   ├──                   # Self-contained cascade PID controller
+│   │   ├── 
+│   │   ├── 
+│   │   ├── 
+│   │   ├──              # PID gains & physics params
+│   │   └── 
+│   └── tasks/direct/
+│       ├── hovering/                   # Single-drone envs
+│       │   ├── pos_hovering.py
+│       │   ├── vel_hovering.py
+│       │   ├── att_hovering.py
+│       │   └── agents/
+│       ├── track/
+│       ├── drone_racing/
+│       ├── drone_racing_marl/
+│       ├── formation/
+│       ├── fly_through/
+│       └── teleoperation/
+└── scripts/
+    ├── skrl/
+    ├── rsl_rl/
+    ├── sb3/
+    └── random_agent.py
 ### 3. Demo Instructions
 We have prepared three progressive demonstrations to validate the sensor. To run them, open your terminal, activate the Isaac Lab environment, and execute the scripts from the repository root.
 
