@@ -23,7 +23,7 @@ Since this project is packaged with a `setup.py`, you can install it into your I
 ### 2. Repository Structure
 Project is strictly organized to separate core logic, execution scripts, and documentation:
 
-
+'''
 MultirangerDeck/
 ├── .gitignore                     # Untracked files and cache exclusions
 ├── README.md                      # Project documentation
@@ -54,34 +54,7 @@ MultirangerDeck/
     │   └── wall_distance_demo_plt.png
     └── demo3/
         └── pyramid_hover_telemetry.png
-
-
-CrazyPlayGround/
-├── source/CrazyPlayGround/CrazyPlayGround/
-│   ├── controllers/                    # Self-contained cascade PID controller
-│   │   ├── cascade_pid.py
-│   │   ├── pid.py
-│   │   ├── config.py
-│   │   ├── crazyflie.yaml              # PID gains & physics params
-│   │   └── utils/math_utils.py
-│   └── tasks/direct/
-│       ├── hovering/                   # Single-drone envs
-│       │   ├── pos_hovering.py
-│       │   ├── vel_hovering.py
-│       │   ├── att_hovering.py
-│       │   └── agents/
-│       ├── track/
-│       ├── drone_racing/
-│       ├── drone_racing_marl/
-│       ├── formation/
-│       ├── fly_through/
-│       └── teleoperation/
-└── scripts/
-    ├── skrl/
-    ├── rsl_rl/
-    ├── sb3/
-    └── random_agent.py
-
+'''
 
 ### 3. Usage
 We have prepared three progressive demonstrations to validate the sensor. To run them, open your terminal, activate the Isaac Lab environment, and execute the scripts from the repository root.
