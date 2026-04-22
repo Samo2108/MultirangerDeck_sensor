@@ -23,6 +23,7 @@ Since this project is packaged with a `setup.py`, you can install it into your I
 ### 2. Repository Structure
 Project is strictly organized to separate core logic, execution scripts, and documentation:
 
+`
 MultirangerDeck/
 ├── .gitignore                     # Untracked files and cache exclusions
 ├── README.md                      # Project documentation
@@ -53,6 +54,8 @@ MultirangerDeck/
     │   └── wall_distance_demo_plt.png
     └── demo3/
         └── pyramid_hover_telemetry.png
+`
+
 
 
 ### 3. Usage
