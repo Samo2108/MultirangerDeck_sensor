@@ -63,17 +63,17 @@ We have prepared three progressive demonstrations to validate the sensor. To run
    `cd ~/IsaacLab`
 
 2. To run the demo simmulation:
-   Demo 1: Basic Wall Validation
+   -Demo 1: Basic Wall Validation
    Tests the sensor's basic directional measurements in a static environment.
 
    `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo1_wall_validation.py --headless --enable_cameras`
 
-   Demo 2: Offset Wall Algorithm Validation
+   -Demo 2: Offset Wall Algorithm Validation
    Demonstrates the sensor correctly returning the closest hit within a generated 10-ray cone.
 
    `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo2_wall_validation.py --headless --enable_cameras`
 
-   Demo 3: Dynamic Pyramid Hover (Terrain Following)
+   -Demo 3: Dynamic Pyramid Hover (Terrain Following)
    A dynamic simulation where a drone uses the Z-down sensor reading in a control loop to maintain a stable 30cm altitude over uneven pyramidal terrain.
    
    `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo3_pyramid_hover.py --headless --enable_cameras`
