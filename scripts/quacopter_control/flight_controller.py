@@ -56,7 +56,7 @@ class QuadcopterController:
             target_vel_x = self.target_vel
 
         # VELOCITY CONTROLLER (Velocity -> Target Pitch) 
-        target_pitch = self.compute_pitch(target_vel_x, vx, ax, dt) 
+        target_pitch = self.compute_pitch(target_vel_x, vx, ax) 
         
            
         # add the height control effect to the velocity controller

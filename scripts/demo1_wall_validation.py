@@ -282,9 +282,6 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
             lines2, labels2 = ax2.get_legend_handles_labels()
             ax.legend(lines + lines2, labels + labels2, loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3)
 
-        # --- CLEANUP ---
-        # If the grid has empty boxes at the end (e.g., a 2x3 grid has 6 spots, but only 5 tests + 1 map),
-        # this loop finds the empty subplots and deletes them so you don't get blank squares in your image.
         for j in range(num_tests + 1, len(axs)):
             fig.delaxes(axs[j])
 
