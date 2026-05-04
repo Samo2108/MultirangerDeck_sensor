@@ -221,7 +221,7 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         fig, axs = plt.subplots(rows, cols, figsize=(20, 6 * rows))
         axs = axs.flatten() # Flatten the 2D array of axes to easily iterate through them
 
-        # --- PLOT 1: Top-Down Spatial Map (Always in the top-left corner) ---
+        # PLOT 1: Top-Down Spatial Map (Always in the top-left corner) ---
         ax_map = axs[0]
         ax_map.plot([-2, 2, 2, -2, -2], [-2, -2, 2, 2, -2], 'k-', linewidth=3, label='Concrete Walls')
         
@@ -243,7 +243,7 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         ax_map.grid(True, linestyle='--', alpha=0.4)
         ax_map.legend(loc='upper left', fontsize='small', framealpha=0.8)
 
-        # --- PLOTS 2 to N: Individual Test Charts ---
+        # PLOTS 2 to N: Individual Test Charts ---
         directions = ["Front", "Back", "Left", "Right", "Down"]
         x_pos = np.arange(len(directions))
         width = 0.35 # Width of the bars
