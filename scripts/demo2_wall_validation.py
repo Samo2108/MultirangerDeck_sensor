@@ -50,15 +50,23 @@ from isaaclab_assets import CRAZYFLIE_CFG
 from source.multiranger_deck_cfg import MultirangerDeckCfg
 from scripts.quacopter_control.flight_controller import QuadcopterController
 
+from source.patterns.multiranger_deck_patterns import MultirangerPatternCfg
+
 # Camera Rotations
-_x, _y, _z, _w = Rotation.from_euler('xyz', [-180, -0, 0], degrees=True).as_quat()
+_rot_matrix = Rotation.from_euler('xyz', [-180, 0, -90], degrees=True)
+_x, _y, _z, _w = _rot_matrix.as_quat()
 CUSTOM_CAMERA_ROT = (_w, _x, _y, _z)
+_x, _y, _z, _w = Rotation.from_euler('xyz', [-160, 0, -80], degrees=True).as_quat() #DRONE POV CAMERA; other angulation [-110, 0, -80]
+CUSTOM_CAMERA_ROT2 = (_w, _x, _y, _z)
+_rx, _ry, _rz, _rw = Rotation.from_euler('xyz', [0, 0, 0], degrees=True).as_quat()
+ROBOT_START_ROT = (_rw, _rx, _ry, _rz)
 
 RAYCAST_TARGETS = [
     "/World/Ground", 
-    "/World/WallNorth_Right", "/World/WallNorth_Left",
-    "/World/WallSouth_Right", "/World/WallSouth_Left", 
-    "/World/WallEast", "/World/WallWest"
+    "/World/WallNorth",
+    "/World/WallSouth", 
+    "/World/WallEastFirst", "/World/WallWestFirst",
+    "/World/WallEastSecond", "/World/WallWestSecond"
 ]
 
 @configclass
@@ -70,55 +78,85 @@ class WallsSceneCfg(InteractiveSceneCfg):
     )
 
     # FOUR WALLS TO TRAP THE DRONE
-    wall_north_right = AssetBaseCfg(
-        prim_path="/World/WallNorth_Right",
-        spawn=sim_utils.CuboidCfg(size=(0.1, 2.0, 2.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))), 
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(1.0, 1.0, 1.0)) 
+    wall_north = AssetBaseCfg(
+        prim_path="/World/WallNorth",
+        spawn=sim_utils.CuboidCfg(size=(0.1, 2.0, 3.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))), 
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(3.0, 0.0, 1.0)) 
     )
-    wall_north_left = AssetBaseCfg(
-        prim_path="/World/WallNorth_Left",
-        spawn=sim_utils.CuboidCfg(size=(0.1, 2.0, 2.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))), 
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(3.0, -1.0, 1.0)) 
+    
+    wall_south = AssetBaseCfg(
+        prim_path="/World/WallSouth",
+        spawn=sim_utils.CuboidCfg(size=(0.1, 4.0, 3.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(-1.0, 0.0, 1.0)) 
     )
-    wall_south_right = AssetBaseCfg(
-        prim_path="/World/WallSouth_Right",
-        spawn=sim_utils.CuboidCfg(size=(0.1, 2.0, 2.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(-1.0, 1.0, 1.0)) 
-    )
-    wall_south_left = AssetBaseCfg(
-        prim_path="/World/WallSouth_Left",
-        spawn=sim_utils.CuboidCfg(size=(0.1, 2.0, 2.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(-3.0, -1.0, 1.0)) 
-    )
-    wall_east = AssetBaseCfg(
-        prim_path="/World/WallEast",
-        spawn=sim_utils.CuboidCfg(size=(4.0, 0.1, 2.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
+    
+    wall_east_first = AssetBaseCfg(
+        prim_path="/World/WallEastFirst",
+        spawn=sim_utils.CuboidCfg(size=(2.0, 0.1, 3.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 2.0, 1.0)) 
     )
-    wall_west = AssetBaseCfg(
-        prim_path="/World/WallWest",
-        spawn=sim_utils.CuboidCfg(size=(4.0, 0.1, 2.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
+    wall_east_second = AssetBaseCfg(
+        prim_path="/World/WallEastSecond",
+        spawn=sim_utils.CuboidCfg(size=(2.0, 0.1, 3.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(2.0, 1.0, 1.0)) 
+    )
+
+    wall_west_first = AssetBaseCfg(
+        prim_path="/World/WallWestFirst",
+        spawn=sim_utils.CuboidCfg(size=(2.0, 0.1, 3.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, -2.0, 1.0))
+    )
+    wall_west_second = AssetBaseCfg(
+        prim_path="/World/WallWestSecond",
+        spawn=sim_utils.CuboidCfg(size=(2.0, 0.1, 3.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(2.0, -1.0, 1.0))
     )
 
     robot = CRAZYFLIE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
-    robot.init_state.pos = (0.0, 0.0, 1.0) 
+    robot.init_state.pos = (0.0, 0.0, 0.15) #start position at 15cm from GND
+    robot.init_state.rot = ROBOT_START_ROT
     
     multiranger = MultirangerDeckCfg(
         prim_path="{ENV_REGEX_NS}/Robot", 
         update_period=1 / 60,
-        offset=MultirangerDeckCfg.OffsetCfg(pos=(0, 0, 0)),
+        offset=MultirangerDeckCfg.OffsetCfg(pos=(0, 0, 0.15)),
         mesh_prim_paths=RAYCAST_TARGETS,
         ray_alignment="yaw",
         max_distance=4.0, 
-        debug_vis=True, 
+        debug_vis=True,
+        pattern_cfg=MultirangerPatternCfg(
+            fov_degrees=15.0,
+            #rays_per_cone=1
+        ),
     )
     
-    camera = CameraCfg(
+    camera = CameraCfg(     #Camera from above
         prim_path="{ENV_REGEX_NS}/Camera",
-        update_period=1 / 30,  height=480, width=640, data_types=["rgb"],
-        spawn=sim_utils.PinholeCameraCfg(focal_length=24.0, focus_distance=400.0, horizontal_aperture=20.955),
-        offset=CameraCfg.OffsetCfg(pos=(0.0, 0.0, 8.0), rot=CUSTOM_CAMERA_ROT),
+        update_period=1 / 30,  
+        height=480,
+        width=640,
+        data_types=["rgb"],
+        spawn=sim_utils.PinholeCameraCfg(
+            focal_length=24.0, focus_distance=400.0, horizontal_aperture=20.955
+        ),
+        offset=CameraCfg.OffsetCfg(
+            pos=(1.0, 0.0, 8.0),
+            rot=CUSTOM_CAMERA_ROT
+        ),
+    )
+
+    camera2 = CameraCfg(        #Camera with drone POV
+        prim_path="{ENV_REGEX_NS}/Robot/body/Camera3",
+        update_period=1 / 30,  
+        height=480,
+        width=640,
+        data_types=["rgb"],
+        spawn=sim_utils.PinholeCameraCfg(
+            focal_length=24.0, focus_distance=400.0, horizontal_aperture=20.955
+        ),
+        offset=CameraCfg.OffsetCfg(
+            pos=(-1.0, -0.25, 3.0),rot=CUSTOM_CAMERA_ROT2),
+            #pos=(-0.8, -0.15, 0.3),rot=CUSTOM_CAMERA_ROT2), #other angulation
     )
 
 
@@ -130,27 +168,40 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
     prop_body_ids = robot.find_bodies("m.*_prop")[0]
     
     # MISSION PARAMETERS
-    drone_brain = QuadcopterController(
-        target_height=1.0,   # Hover securely inside the walls
-        stop_distance=1.0,   
-        cruise_pitch=0.0     # Hover in place (0.0 means don't move forward)
+    drone_controller = QuadcopterController(
+        target_height=1.0,  
+        cruise_vel=0.5,
+        sim=sim,
+        debug=True
     )
 
     front_props, rear_props = [0, 3], [1, 2]
     sim.reset()
     
-    if not os.path.exists("MultirangerDeck/multimedia/demo2/"):
-        os.makedirs("MultirangerDeck/multimedia/demo2/")
+    save_dir = os.path.join(parent_dir, "multimedia", "demo2")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    # VIDEO
+    video_path = os.path.join(save_dir, "flight.mp4")
+    print(f"[INFO] Start recording video: {video_path}")
+    video_writer = imageio.get_writer(video_path, fps=30)
 
     # REGISTERING
     log_time = []
     log_front, log_back, log_left, log_right, log_down = [], [], [], [], []
-    img_np = img_np2 = None
+    img_np_pov = None
+    img_np_top = None
+
+    #phase = 1               # 1: climb: 2: movement forward
+    #target_cruise_z = 1.5   # final altitude
+    #ascent_rate = 0.003     # climbing velocity
     
-    
+    print("\n[INFO] Start moving")
+
     while simulation_app.is_running():
-        if count > 500.0:
-            break # Run for a shorter time since it's just hovering
+        if count > 1300.0:
+            break 
             
         ranges = scene["multiranger"].data.ranges  
         front_range = float(ranges[0, 0].item())  
@@ -158,7 +209,24 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         left_range  = float(ranges[0, 2].item())
         right_range = float(ranges[0, 3].item())
         down_range  = float(ranges[0, 4].item()) 
-        
+
+        if front_range < 0.3:
+            drone_controller.set_cruise_velocity(0.0)
+            
+            
+        # if phase == 1:
+        #     if drone_controller.target_height < target_cruise_z:
+                
+        #         drone_controller.target_height += ascent_rate
+        #     else:
+        #         print("[INFO] Phase 2: Start moving forward")
+        #         phase = 2
+        #         drone_controller.cruise_pitch = 0.07
+
+        # elif phase == 2:
+            
+        #     pass
+
         # --- LOG MULTIRANGER DATA ---
         log_time.append(sim_time)
         log_front.append(front_range)
@@ -174,15 +242,16 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         
         current_pitch = pitch[0].item()
         pitch_rate = ang_vel[0, 1].item()
-        vx = float(robot.data.root_lin_vel_w[0, 0].item())
+        vx = float(robot.data.body_com_vel_w[0, 0][0].item())
         vz = float(robot.data.root_lin_vel_w[0, 2].item())
+        ax = float(robot.data.body_lin_acc_w[0, 0][0].item())
 
         robot_mass = float(robot.root_physx_view.get_masses().sum().item())
         gravity = torch.tensor(sim.cfg.gravity, device=sim.device).norm().item()
         hover_per = (robot_mass * gravity) / 4.0
 
-        front_thrust, rear_thrust, _, _ = drone_brain.update(
-            front_range, down_range, current_pitch, pitch_rate, vx, vz, hover_per
+        front_thrust, rear_thrust = drone_controller.update(
+            down_range, current_pitch, pitch_rate, vx, vz, ax, hover_per
         )
         
         forces = torch.zeros(robot.num_instances, 4, 3, device=sim.device)
@@ -198,16 +267,34 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         sim_time += sim_dt
         scene.update(sim_dt)
 
-        # Keep overwriting the image variables so we always have the latest frame
-        img_np = scene["camera"].data.output["rgb"][0].cpu().numpy()
-        if img_np.shape[-1] == 4: img_np = img_np[..., :3]
+        # Videoo
+        top_rgb_tensor = scene["camera"].data.output["rgb"]
+        pov_rgb_tensor = scene["camera2"].data.output["rgb"]
+        
+        if pov_rgb_tensor is not None and top_rgb_tensor is not None:
+            frame_top = top_rgb_tensor[0].clone().cpu().numpy()
+            frame_pov = pov_rgb_tensor[0].clone().cpu().numpy()
+
+            if frame_top.shape[-1] == 4: 
+                frame_top = frame_top[..., :3]
+            if frame_pov.shape[-1] == 4: 
+                frame_pov = frame_pov[..., :3]
+
+            img_np_top = frame_top
+            img_np_pov = frame_pov
+
+            if count % 6 == 0: #1 frame per 6 step: 200Hz / 30FPS = 6.6666...
+                video_writer.append_data(frame_pov.astype(np.uint8))
         
         count += 1
 
+    print(f"[INFO] Saving video...")
+    video_writer.close()
 
+    images = scene["camera"].data.output["rgb"]
     print("[INFO] Saving final camera snapshots...")
-    if img_np is not None:
-        Image.fromarray(img_np.astype(np.uint8)).save("MultirangerDeck/multimedia/demo2/wall_distance_demo.png")
+    if img_np_top is not None:
+        Image.fromarray(img_np_top.astype(np.uint8)).save(f"{save_dir}/wall_distance_demo.png")
 
         
     print("[INFO] Generating Multiranger plot...")
@@ -223,13 +310,15 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         ax.set_title("Multiranger Sensor Data (Wall Hover Scenario)")
         ax.set_ylabel("Distance (meters)")
         ax.set_xlabel("Simulation Time (seconds)")
+        ax.set_ylim(0, 5)
         ax.legend()
         ax.grid(True)
         
         plt.tight_layout()
-        plt.savefig("MultirangerDeck/multimedia/demo2/wall_distance_demo_plt.png")
-        print("[INFO] Saved MultirangerDeck/multimedia/demo2/wall_distance_demo_plt.png")
+        plt.savefig(f"{save_dir}/wall_distance_demo_plt.png")
+        print(f"[INFO] Saved {save_dir}/wall_distance_demo_plt.png")
 
+    drone_controller.plot_debug(save_dir)
 def main():
     sim_cfg = sim_utils.SimulationCfg(dt=0.005, device=args_cli.device)
     sim = sim_utils.SimulationContext(sim_cfg)
