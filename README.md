@@ -25,8 +25,14 @@ pip install -e .
 ```
    so that the repositories packages can be accessed from anywhere (e.g. the numpy libraries)
 
+### 2. Key Features
+* **Realistic Range Clamping:** All sensor distance measurements are strictly clamped to a maximum of 4.0 meters, accurately mirroring the physical hardware limits of the real VL53L1X ToF sensors.
+* **Accurate Beam Spread (FoV):** Unlike standard infinitely thin raycasters, this simulation models the physical conical light spread of ToF sensors. 
+* **Modular Resolution:** The Field of View (FoV) and the number of individual rays per cone are fully modular. Users can tune these parameters to easily balance high-fidelity detection (preventing the drone from missing thin obstacles) with simulation performance.
+* **Universal Collision Detection:** Powered by the `MultiMeshRayCaster`, the sensors seamlessly detect both computationally efficient primitive shapes (spheres, cubes) and complex, triangulated 3D meshes.
+* **Dynamic Object Tracking:** The sensors continuously track both static environmental obstacles (walls, floors) and dynamic, moving objects in real-time.
 
-### 2. Repository Structure
+### 3. Repository Structure
 Project is strictly organized to separate core logic, execution scripts, and documentation:
 
 ```
@@ -62,7 +68,7 @@ MultirangerDeck/
         └── pyramid_hover_telemetry.png
 ```
 
-### 3. Usage
+### 4. Usage
 We have prepared three progressive demonstrations to validate the sensor. To run them, open your terminal, activate the Isaac Lab environment, and execute the scripts from the repository root.
 
 1.  Navigate to the root of isaac lab directory:

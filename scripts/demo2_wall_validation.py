@@ -161,171 +161,193 @@ class WallsSceneCfg(InteractiveSceneCfg):
 
 
 def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
-    sim_dt = sim.get_physics_dt()
-    sim_time = 0.0
-    count = 0
     robot = scene["robot"]
-    prop_body_ids = robot.find_bodies("m.*_prop")[0]
-    
-    # MISSION PARAMETERS
-    drone_controller = QuadcopterController(
-        target_height=1.0,  
-        target_vel=0.5,
-        sim=sim,
-        debug=True
-    )
-
-    front_props, rear_props = [0, 3], [1, 2]
     sim.reset()
     
-    save_dir = os.path.join(parent_dir, "multimedia", "demo2")
+    # Define our test coordinates [X, Y, Z]
+    test_positions = [
+        [0.0, 0.0, 1.0],   # Center
+    ]
+
+    num_drones = scene.num_envs
+    all_drones_history = [[[] for _ in range(num_drones)] for _ in range(num_drones)]
+    expected = [] #List of ideal tests
+
+    print("\n" + "="*70)
+    print(" MULTIRANGER DECK VALIDATION PROTOCOL")
+    print("="*70)
+
+    save_dir = os.path.join(parent_dir, "multimedia", "demo1")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
+        
+    # Data Loggers for plotting
+    all_expected = []
+    all_measured = []
+    all_errors_mm = []
 
-    # VIDEO
-    video_path = os.path.join(save_dir, "flight.mp4")
-    print(f"[INFO] Start recording video: {video_path}")
-    video_writer = imageio.get_writer(video_path, fps=30)
+    root_state = robot.data.default_root_state.clone()
 
-    # REGISTERING
-    log_time = []
-    log_front, log_back, log_left, log_right, log_down = [], [], [], [], []
-    img_np_pov = None
-    img_np_top = None
+    for idx, pos in enumerate(test_positions):
+        if not simulation_app.is_running():
+            break
 
-    #phase = 1               # 1: climb: 2: movement forward
-    #target_cruise_z = 1.5   # final altitude
-    #ascent_rate = 0.003     # climbing velocity
-    
-    print("\n[INFO] Start moving")
+        # Teleport the robot to the exact test coordinate
+        root_state = robot.data.default_root_state.clone()
+        root_state[:, 0:3] = torch.tensor(pos, device=sim.device)
+        root_state[:, 3:7] = torch.tensor([1.0, 0.0, 0.0, 0.0], device=sim.device) 
+        root_state[:, 7:13] = 0.0 
+        
+        robot.reset()
+        scene.reset()
 
-    while simulation_app.is_running():
-        if count > 1300.0:
-            break 
+        # step sim for a few frames
+        for _ in range(20):
+            robot.write_root_pose_to_sim(root_state[:, :7])
+            robot.write_root_velocity_to_sim(root_state[:, 7:])
             
-        ranges = scene["multiranger"].data.ranges  
-        front_range = float(ranges[0, 0].item())  
-        back_range  = float(ranges[0, 1].item())
-        left_range  = float(ranges[0, 2].item())
-        right_range = float(ranges[0, 3].item())
-        down_range  = float(ranges[0, 4].item()) 
+            scene.write_data_to_sim()
+            sim.step(render=True)
+            
+            # Update the scene (which updates the camera and multiranger)
+            scene.update(sim.get_physics_dt())
 
-        if front_range < 0.3:
-            drone_controller.set_cruise_velocity(0.0)
-            
-            
-        # if phase == 1:
-        #     if drone_controller.target_height < target_cruise_z:
+        sim.render()
+        scene.update(sim.get_physics_dt())
+
+        # taking picture
+        images = scene["camera"].data.output["rgb"]
+        if images is not None:
+                img_np = images[0].cpu().numpy()
+                img = Image.fromarray(img_np.astype('uint8')).convert("RGB")
                 
-        #         drone_controller.target_height += ascent_rate
-        #     else:
-        #         print("[INFO] Phase 2: Start moving forward")
-        #         phase = 2
-        #         drone_controller.cruise_pitch = 0.07
+                img.save(f"{save_dir}/test_{idx+1}_view.png")
 
-        # elif phase == 2:
+        # Read the actual sensor data
+        ranges = scene["multiranger"].data.ranges
+
+        meas_f = float(ranges[0, 0].item())
+        meas_b = float(ranges[0, 1].item())
+        meas_l = float(ranges[0, 2].item())
+        meas_r = float(ranges[0, 3].item())
+        meas_d = float(ranges[0, 4].item())
+
+        # Calculate the mathematically expected distances
+        exp_f = 2.0 - pos[0]
+        exp_b = pos[0] - (-2.0)
+        exp_l = 2.0 - pos[1]
+        exp_r = pos[1] - (-2.0)
+        exp_d = pos[2] # Ground is exactly at Z=0
+        
+        directions = [
+            (exp_f, meas_f),
+            (exp_b, meas_b),
+            (exp_l, meas_l),
+            (exp_r, meas_r),
+            (exp_d, meas_d)
+        ]
+
+        for exp, meas in directions:
+            error = abs(exp - meas) * 1000 # Convert to millimeters
+            if error < 0.01: error = 0.0 
+
+            # Save to logs for plotting
+            all_expected.append(exp)
+            all_measured.append(meas)
+            all_errors_mm.append(error)
+
+
+    print("\n[INFO] Validation complete. Generating Plots...")
+
+    # GENERATE VALIDATION PLOTS
+    if len(all_expected) > 0:
+        # Dynamically calculate grid size based on number of tests
+        num_tests = len(test_positions)
+        cols = 3
+        # Add 1 to num_tests to account for the Map, then calculate required rows
+        rows = math.ceil((num_tests + 1) / cols) 
+        
+        # Create the grid of subplots
+        fig, axs = plt.subplots(rows, cols, figsize=(20, 6 * rows))
+        axs = axs.flatten() # Flatten the 2D array of axes to easily iterate through them
+
+        # PLOT 1: Top-Down Spatial Map (Always in the top-left corner) ---
+        ax_map = axs[0]
+        ax_map.plot([-2, 2, 2, -2, -2], [-2, -2, 2, 2, -2], 'k-', linewidth=3, label='Concrete Walls')
+        
+        x_coords = [pos[0] for pos in test_positions]
+        y_coords = [pos[1] for pos in test_positions]
+        z_coords = [pos[2] for pos in test_positions]
+        
+        ax_map.scatter(x_coords, y_coords, color='red', s=100, edgecolors='black', zorder=3, label='Drone Positions')
+        
+        for i, (x, y, z) in enumerate(zip(x_coords, y_coords, z_coords)):
+            ax_map.annotate(f"T{i+1}\nZ={z}m", (x, y), textcoords="offset points", xytext=(8,8), ha='left', fontsize=10, weight='bold')
+
+        ax_map.set_title('Top-Down Map: Validation Coordinates')
+        ax_map.set_xlabel('X Position (meters)')
+        ax_map.set_ylabel('Y Position (meters)')
+        ax_map.set_aspect('equal', adjustable='box') 
+        ax_map.set_xlim(-2.5, 2.5) 
+        ax_map.set_ylim(-2.5, 2.5)
+        ax_map.grid(True, linestyle='--', alpha=0.4)
+        ax_map.legend(loc='upper left', fontsize='small', framealpha=0.8)
+
+        # PLOTS 2 to N: Individual Test Charts ---
+        directions = ["Front", "Back", "Left", "Right", "Down"]
+        x_pos = np.arange(len(directions))
+        width = 0.35 # Width of the bars
+
+        for i in range(num_tests):
+            ax = axs[i + 1] # Shift index by 1 to skip the Map
             
-        #     pass
+            # Slice the flat arrays to grab only the 5 data points for THIS specific test
+            start_idx = i * 5
+            end_idx = start_idx + 5
+            
+            exp_vals = all_expected[start_idx:end_idx]
+            meas_vals = all_measured[start_idx:end_idx]
+            err_vals_mm = all_errors_mm[start_idx:end_idx]
 
-        # --- LOG MULTIRANGER DATA ---
-        log_time.append(sim_time)
-        log_front.append(front_range)
-        log_back.append(back_range)
-        log_left.append(left_range)
-        log_right.append(right_range)
-        log_down.append(down_range)
-        
-        # Flight Controller logic
-        root_quat = robot.data.root_quat_w
-        ang_vel = robot.data.root_ang_vel_w 
-        roll, pitch, yaw = math_utils.euler_xyz_from_quat(root_quat)
-        
-        current_pitch = pitch[0].item()
-        pitch_rate = ang_vel[0, 1].item()
-        vx = float(robot.data.body_com_vel_w[0, 0][0].item())
-        vz = float(robot.data.root_lin_vel_w[0, 2].item())
-        ax = float(robot.data.body_lin_acc_w[0, 0][0].item())
+            # Primary Axis (Left) - Expected vs Measured in Meters
+            rects1 = ax.bar(x_pos - width/2, exp_vals, width, label='Expected (m)', color='royalblue', edgecolor='black')
+            rects2 = ax.bar(x_pos + width/2, meas_vals, width, label='Measured (m)', color='darkorange', edgecolor='black')
+            
+            ax.set_ylabel('Distance (meters)')
+            ax.set_xticks(x_pos)
+            ax.set_xticklabels(directions)
+            
+            # Secondary Axis (Right) - Error in Millimeters
+            ax2 = ax.twinx()
+            ax2.plot(x_pos, err_vals_mm, color='red', marker='o', linestyle='dashed', linewidth=2, markersize=8, label='Error (mm)')
+            ax2.set_ylabel('Error (millimeters)', color='red', weight='bold')
+            ax2.tick_params(axis='y', labelcolor='red')
 
-        robot_mass = float(robot.root_physx_view.get_masses().sum().item())
-        gravity = torch.tensor(sim.cfg.gravity, device=sim.device).norm().item()
-        hover_per = (robot_mass * gravity) / 4.0
+            # Formatting
+            ax.set_title(f'Test {i+1} Measurements\n(X={test_positions[i][0]}, Y={test_positions[i][1]}, Z={test_positions[i][2]})')
+            ax.grid(axis='y', linestyle=':', alpha=0.6)
+            
+            # Combine the legends from both axes and put them below the chart
+            lines, labels = ax.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+            ax.legend(lines + lines2, labels + labels2, loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3)
 
-        front_thrust, rear_thrust = drone_controller.update(
-            down_range, current_pitch, pitch_rate, vx, vz, ax, hover_per
-        )
-        
-        forces = torch.zeros(robot.num_instances, 4, 3, device=sim.device)
-        forces[:, front_props, 2] = front_thrust
-        forces[:, rear_props,  2] = rear_thrust
-        
-        robot.permanent_wrench_composer.set_forces_and_torques(
-            forces=forces, torques=torch.zeros_like(forces), body_ids=prop_body_ids
-        )
+        for j in range(num_tests + 1, len(axs)):
+            fig.delaxes(axs[j])
 
-        scene.write_data_to_sim()
-        sim.step(render=True)
-        sim_time += sim_dt
-        scene.update(sim_dt)
-
-        # Videoo
-        top_rgb_tensor = scene["camera"].data.output["rgb"]
-        pov_rgb_tensor = scene["camera2"].data.output["rgb"]
-        
-        if pov_rgb_tensor is not None and top_rgb_tensor is not None:
-            frame_top = top_rgb_tensor[0].clone().cpu().numpy()
-            frame_pov = pov_rgb_tensor[0].clone().cpu().numpy()
-
-            if frame_top.shape[-1] == 4: 
-                frame_top = frame_top[..., :3]
-            if frame_pov.shape[-1] == 4: 
-                frame_pov = frame_pov[..., :3]
-
-            img_np_top = frame_top
-            img_np_pov = frame_pov
-
-            if count % 6 == 0: #1 frame per 6 step: 200Hz / 30FPS = 6.6666...
-                video_writer.append_data(frame_pov.astype(np.uint8))
-        
-        count += 1
-
-    print(f"[INFO] Saving video...")
-    video_writer.close()
-
-    images = scene["camera"].data.output["rgb"]
-    print("[INFO] Saving final camera snapshots...")
-    if img_np_top is not None:
-        Image.fromarray(img_np_top.astype(np.uint8)).save(f"{save_dir}/wall_distance_demo.png")
-
-        
-    print("[INFO] Generating Multiranger plot...")
-    if len(log_time) > 0:
-        fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-        
-        ax.plot(log_time, log_front, color="blue", label="Front Range")
-        ax.plot(log_time, log_back, color="orange", label="Back Range")
-        ax.plot(log_time, log_left, color="green", label="Left Range")
-        ax.plot(log_time, log_right, color="red", label="Right Range")
-        ax.plot(log_time, log_down, color="purple", linestyle="--", label="Down Range (Altitude)")
-        
-        ax.set_title("Multiranger Sensor Data (Wall Hover Scenario)")
-        ax.set_ylabel("Distance (meters)")
-        ax.set_xlabel("Simulation Time (seconds)")
-        ax.set_ylim(0, 5)
-        ax.legend()
-        ax.grid(True)
-        
         plt.tight_layout()
-        plt.savefig(f"{save_dir}/wall_distance_demo_plt.png")
-        print(f"[INFO] Saved {save_dir}/wall_distance_demo_plt.png")
-
-    drone_controller.plot_debug(save_dir)
+        plt.subplots_adjust(bottom=0.15) # Give extra room at the bottom for the legends
+        plt.savefig(f"{save_dir}/wall_distance_demo.png")
+        print("[INFO] Plot saved to wall_distance_demo.png!\n")
+        
 def main():
     sim_cfg = sim_utils.SimulationCfg(dt=0.005, device=args_cli.device)
     sim = sim_utils.SimulationContext(sim_cfg)
-    sim.set_camera_view(eye=[3.5, 3.5, 3.5], target=[0.0, 0.0, 0.0])
-    scene_cfg = WallsSceneCfg(num_envs=args_cli.num_envs, env_spacing=2.0)
+    sim.set_camera_view(eye=[0.0, -0.01, 8.0], target=[0.0, 0.0, 0.0]) # Top-down view
+    
+    scene_cfg = WallsSceneCfg(num_envs=args_cli.num_envs, env_spacing=6.0)
     scene = InteractiveScene(scene_cfg)
-    sim.reset()
+    
     run_simulator(sim, scene)
 
 if __name__ == "__main__":
