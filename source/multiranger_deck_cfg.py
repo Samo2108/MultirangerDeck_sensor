@@ -3,8 +3,11 @@ from isaaclab.sensors.ray_caster.multi_mesh_ray_caster_cfg import MultiMeshRayCa
 from source.multiranger_deck_data import MultirangerDeckData
 from source.patterns.multiranger_deck_patterns import MultirangerPatternCfg
 from source.multiranger_deck import MultirangerDeck
+
+
 @configclass
 class MultirangerDeckCfg(MultiMeshRayCasterCfg):
     """Configuration for the Multiranger Deck."""
     class_type: type = MultirangerDeck
     pattern_cfg: MultirangerPatternCfg = MultirangerPatternCfg()
+    max_distance: float = 4.0

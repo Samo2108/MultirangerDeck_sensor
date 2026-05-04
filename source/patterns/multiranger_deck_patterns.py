@@ -16,8 +16,8 @@ def multiranger_pattern(cfg: 'MultirangerPatternCfg', device: str) -> tuple[torc
     ], device=device)
  
     # Define the actual positions of the sensors
-    d_off = 0.03  
-    z_off = -0.00
+    d_off = 0.015 
+    z_off = 0.00
     base_offsets = torch.tensor([
         [d_off, 0.0, z_off],   
         [-d_off, 0.0, z_off],  

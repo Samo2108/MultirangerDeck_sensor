@@ -20,4 +20,7 @@ class MultirangerDeck(MultiMeshRayCaster):
             
         hit_distances = torch.norm(self._data.ray_hits_w[env_ids] - self._ray_starts_w[env_ids], dim=-1)
         grouped_distances = hit_distances.view(-1, 5, self.cfg.pattern_cfg.rays_per_cone)
-        self._data.ranges[env_ids] = torch.min(grouped_distances, dim=2)[0]
+        min_dists = torch.min(grouped_distances, dim=2)[0]
+        clipped_dists = torch.clamp(min_dists, max=self.cfg.max_distance)
+        
+        self._data.ranges[env_ids] = clipped_dists
