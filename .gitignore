@@ -14,7 +14,7 @@ env/
 *.usdc
 
 # Output media (Don't upload massive videos or plots to GitHub!)
-# *.mp4
+*.mp4
 *.png
 *.jpg
 output_images/
