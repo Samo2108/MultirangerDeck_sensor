@@ -85,8 +85,6 @@ We have prepared three progressive demonstrations to validate the sensor. To run
    
     `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo3_pyramid_hover.py --headless --enable_cameras`
 
-### 4. Contributions
-Alexandru Zaporojanu, Luca Samorì, Tommaso Tieri.
 
 ### 5. Credits
 Framework: Built using the NVIDIA Isaac Lab framework.
