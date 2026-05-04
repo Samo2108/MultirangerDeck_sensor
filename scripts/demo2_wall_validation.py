@@ -170,7 +170,7 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
     # MISSION PARAMETERS
     drone_controller = QuadcopterController(
         target_height=1.0,  
-        cruise_vel=0.5,
+        target_vel=0.5,
         sim=sim,
         debug=True
     )
