@@ -46,7 +46,7 @@ from PIL import Image
 
 # Import base Raycaster components
 from source.multiranger_deck_cfg import MultirangerDeckCfg
-
+from source.patterns.multiranger_deck_patterns import MultirangerPatternCfg
 ##
 # Pre-defined configs
 ##
@@ -136,7 +136,11 @@ class RaycasterSensorSceneCfg(InteractiveSceneCfg):
         ],  
         ray_alignment="yaw",
         max_distance=4.0, 
-        debug_vis=True, 
+        debug_vis=True,
+        pattern_cfg=MultirangerPatternCfg(
+            fov_degrees=15.0,
+        )
+            
     )
     
     # SIDE CAMERA
@@ -179,8 +183,8 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
     prop_body_ids = robot.find_bodies("m.*_prop")[0]
 
     # MISSION PARAMETERS 
-    target_height = 0.4    # meters
-    cruise_vel = 1.5          # m/s
+    target_height = 0.5   # meters
+    cruise_vel = 1.5        # m/s
     
     # Initialize controller
     drone_controller = QuadcopterController(
@@ -189,13 +193,10 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         sim=sim,
         debug=True
     )
-
-    front_props = [0, 3]    
-    rear_props  = [1, 2]
     
     sim.reset()
     
-    save_dir = os.path.join(parent_dir, "multimedia", "demo3")
+    save_dir = os.path.join(parent_dir, "multimedia", "demo2")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -213,29 +214,44 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
             break
         
         # SENSOR READINGS 
-        ranges = scene["multiranger"].data.ranges  
-        front_range = float(ranges[0, 0].item())  
+        ranges = scene["multiranger"].data.ranges
         down_range  = float(ranges[0, 4].item()) 
         
-        root_quat = robot.data.root_quat_w
-        ang_vel = robot.data.root_ang_vel_w
-        roll, pitch, yaw = math_utils.euler_xyz_from_quat(root_quat)
-        
-        current_pitch = pitch[0].item()
-        pitch_rate = ang_vel[0, 1].item()
-        vx = float(robot.data.root_lin_vel_w[0, 0].item())
-        vz = float(robot.data.root_lin_vel_w[0, 2].item())
+        vx = float(robot.data.root_lin_vel_b[0, 0].item()) 
+        vy = float(robot.data.root_lin_vel_b[0, 1].item()) 
+        vz = float(robot.data.root_lin_vel_w[0, 2].item()) 
         ax = float(robot.data.body_lin_acc_w[0, 0][0].item())
+        ay = float(robot.data.body_lin_acc_w[0, 1][1].item())
         
+        roll, pitch, yaw = math_utils.euler_xyz_from_quat(robot.data.root_quat_w)
+        current_roll  = roll[0].item()
+        current_pitch = pitch[0].item()
+        current_yaw   = yaw[0].item()
+        
+        # Body angular rates
+        roll_rate  = float(robot.data.root_ang_vel_b[0, 0].item())
+        pitch_rate = float(robot.data.root_ang_vel_b[0, 1].item())
+        yaw_rate   = float(robot.data.root_ang_vel_b[0, 2].item())
+        
+        # UPDATE DRONE COMANDS
         robot_mass = float(robot.root_physx_view.get_masses().sum().item())
         gravity = torch.tensor(sim.cfg.gravity, device=sim.device).norm().item()
-        hover_per = (robot_mass * gravity) / 4.0
-
-        # UPDATE DRONE COMANDS
-        front_thrust, rear_thrust = drone_controller.update(
-            down_range, 
-            current_pitch, pitch_rate, 
-            vx, vz, ax, hover_per
+        hover_thrust = (robot_mass * gravity) / 4.0
+        
+        m0, m1, m2, m3 = drone_controller.update(
+            down_range=down_range,
+            current_pitch=current_pitch,
+            pitch_rate=pitch_rate,
+            current_roll=current_roll,
+            roll_rate=roll_rate,
+            vx=vx,
+            vy=vy,
+            vz=vz,
+            ax=ax,
+            ay=ay,
+            base_hover_thrust=hover_thrust,
+            current_yaw=current_yaw,
+            yaw_rate=yaw_rate
         )
 
         # ---  LOG DATA ---
@@ -247,8 +263,10 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         forces = torch.zeros(robot.num_instances, 4, 3, device=sim.device)
         torques = torch.zeros_like(forces)
 
-        forces[:, front_props, 2] = front_thrust
-        forces[:, rear_props,  2] = rear_thrust
+        forces[:, 0, 2] = m0  # Front-Right
+        forces[:, 1, 2] = m1  # Rear-Right
+        forces[:, 2, 2] = m2  # Rear-Left
+        forces[:, 3, 2] = m3  # Front-Left
         
         robot.permanent_wrench_composer.set_forces_and_torques(
             forces=forces, torques=torques, body_ids=prop_body_ids

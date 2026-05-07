@@ -40,24 +40,38 @@ def multiranger_pattern(cfg: 'MultirangerPatternCfg', device: str) -> tuple[torc
         # Add the 1 Center ray
         ray_dirs.append(b_dir)
         ray_starts.append(base_offsets[i])
+        
         # Calculate the remaining peripheral rays dynamically
-        num_edge_rays = cfg.rays_per_cone - 1 
-        if num_edge_rays > 0:
+        # 1/3 for inner rays, 2/3 for outer rays 
+        num_edge_rays_in = torch.ceil((cfg.rays_per_cone - 1) / 3.0).long()
+        num_edge_rays_out = cfg.rays_per_cone - 1 - num_edge_rays_in
+        
+        half_fov_in = half_fov / 2.0
+        if num_edge_rays_in > 0:
             # Divide 360 degrees (2*pi) by the number of outer rays
-            angle_step = (2 * math.pi) / num_edge_rays
-            for j in range(num_edge_rays):
+            angle_step = (2 * math.pi) / num_edge_rays_in
+            for j in range(num_edge_rays_in):
                 angle = j * angle_step
-                vec = (b_dir * math.cos(half_fov) + 
+                vec = (b_dir * math.cos(half_fov_in) + 
+                       (right * math.cos(angle) + up_ort * math.sin(angle)) * math.sin(half_fov_in))
+                ray_dirs.append(vec / torch.norm(vec))
+                ray_starts.append(base_offsets[i])
+        
+        if num_edge_rays_out > 0:
+            angle_step = (2 * math.pi) / num_edge_rays_out
+            for j in range(num_edge_rays_out):
+                angle = j * angle_step
+                vec = (b_dir * math.cos(half_fov) - 
                        (right * math.cos(angle) + up_ort * math.sin(angle)) * math.sin(half_fov))
                 ray_dirs.append(vec / torch.norm(vec))
                 ray_starts.append(base_offsets[i])
  
     return torch.stack(ray_starts), torch.stack(ray_dirs)
 
-# 2. Define the Pattern Config SECOND, passing the func directly
+#
 @configclass
 class MultirangerPatternCfg(PatternBaseCfg):
     """Configuration for the multiranger 5-cone pattern."""
     func: callable = multiranger_pattern
-    rays_per_cone: int = 10  # 1 center ray + 9 peripheral rays
+    rays_per_cone: torch.Tensor = torch.tensor(10)  # 1 center ray + 9 peripheral rays
     fov_degrees: float = 27.0
