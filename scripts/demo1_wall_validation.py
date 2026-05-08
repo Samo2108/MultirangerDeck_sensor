@@ -10,7 +10,6 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.append(parent_dir)
 
-
 from isaaclab.app import AppLauncher
 
 parser = argparse.ArgumentParser(description="Multiranger Deck - Validation Scenario")
@@ -50,7 +49,7 @@ CUSTOM_CAMERA_ROT = (_w, _x, _y, _z)
 RAYCAST_TARGETS = [
     "/World/Ground", 
     "{ENV_REGEX_NS}/Wall.*"
-]   #"North", "/World/WallSouth", "/World/WallEast", "/World/WallWest"
+]
 
 @configclass
 class ValidationSceneCfg(InteractiveSceneCfg):
@@ -60,24 +59,23 @@ class ValidationSceneCfg(InteractiveSceneCfg):
         spawn=sim_utils.UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Environments/Grid/default_environment.usd")
     )
 
-    # We shift the 0.1m thick walls by 0.05m so the inner faces rest EXACTLY at +/- 2.0m
     wall_north = AssetBaseCfg(
-        prim_path="{ENV_REGEX_NS}/WallNorth", # Front (+X)
+        prim_path="{ENV_REGEX_NS}/WallNorth", 
         spawn=sim_utils.CuboidCfg(size=(0.1, 4.0, 2.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
         init_state=AssetBaseCfg.InitialStateCfg(pos=(2.05, 0.0, 1.0)) 
     )
     wall_south = AssetBaseCfg(
-        prim_path="{ENV_REGEX_NS}/WallSouth", # Back (-X)
+        prim_path="{ENV_REGEX_NS}/WallSouth", 
         spawn=sim_utils.CuboidCfg(size=(0.1, 4.0, 2.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
         init_state=AssetBaseCfg.InitialStateCfg(pos=(-2.05, 0.0, 1.0)) 
     )
     wall_east = AssetBaseCfg(
-        prim_path="{ENV_REGEX_NS}/WallEast", # Left (+Y)
+        prim_path="{ENV_REGEX_NS}/WallEast", 
         spawn=sim_utils.CuboidCfg(size=(4.0, 0.1, 2.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 2.05, 1.0)) 
     )
     wall_west = AssetBaseCfg(
-        prim_path="{ENV_REGEX_NS}/WallWest", # Right (-Y)
+        prim_path="{ENV_REGEX_NS}/WallWest", 
         spawn=sim_utils.CuboidCfg(size=(4.0, 0.1, 2.0), visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.7, 0.7, 0.7))),
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, -2.05, 1.0))
     )
@@ -91,7 +89,6 @@ class ValidationSceneCfg(InteractiveSceneCfg):
         offset=MultirangerDeckCfg.OffsetCfg(pos=(0, 0, 0)),
         pattern_cfg=MultirangerPatternCfg(
             fov_degrees=15.0,
-            #rays_per_cone=1
         ),
         mesh_prim_paths=RAYCAST_TARGETS,
         ray_alignment="yaw",
@@ -105,6 +102,12 @@ class ValidationSceneCfg(InteractiveSceneCfg):
         spawn=sim_utils.PinholeCameraCfg(focal_length=24.0, focus_distance=400.0, horizontal_aperture=20.955),
         offset=CameraCfg.OffsetCfg(pos=(-0.0, 0.0, 8.0), rot=CUSTOM_CAMERA_ROT),
     )
+    glob_cam = CameraCfg(
+        prim_path="World/GlobalCamera",
+        update_period=1 / 30, height=1080, width=1920, data_types=["rgb"],
+        spawn=sim_utils.PinholeCameraCfg(focal_length=24.0, focus_distance=400.0, horizontal_aperture=20.955),
+        offset=CameraCfg.OffsetCfg(pos=(0.0, -0.01, 16.0), rot=CUSTOM_CAMERA_ROT),
+    )
 
 def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
     robot = scene["robot"]
@@ -116,15 +119,12 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         [1.0, 0.0, 1.0],   # 1m Forward
         [0.0, 1.5, 0.5],   # 1.5m Left, Low altitude
         [-1.0, -1.0, 1.5], # 1m Back, 1m Right, High altitude
-       # [1.8, 1.8, 0.3]    # Very close to Front-Left corner
     ]
 
     num_drones = scene.num_envs
-    all_drones_history = [[[] for _ in range(num_drones)] for _ in range(num_drones)]
-    expected = [] #List of ideal tests
 
     print("\n" + "="*70)
-    print(" MULTIRANGER DECK VALIDATION PROTOCOL")
+    print(" MULTIRANGER DECK PARALLEL VALIDATION PROTOCOL")
     print("="*70)
 
     save_dir = os.path.join(parent_dir, "multimedia", "demo1")
@@ -136,51 +136,60 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
     all_measured = []
     all_errors_mm = []
 
+    # Map the test positions to the available drones
+    # If num_drones > len(test_positions), it cycles back to the start of the list
+    actual_pos = [test_positions[i % len(test_positions)] for i in range(num_drones)]
+    pos_tensor = torch.tensor(actual_pos, device=sim.device)
+
+    # Teleport ALL robots simultaneously
     root_state = robot.data.default_root_state.clone()
+    root_state[:, 0:3] = scene.env_origins + pos_tensor
+    root_state[:, 3:7] = torch.tensor([1.0, 0.0, 0.0, 0.0], device=sim.device) 
+    root_state[:, 7:13] = 0.0 
+    
+    robot.reset()
+    scene.reset()
 
-    for idx, pos in enumerate(test_positions):
-        if not simulation_app.is_running():
-            break
-
-        # Teleport the robot to the exact test coordinate
-        root_state = robot.data.default_root_state.clone()
-        root_state[:, 0:3] = torch.tensor(pos, device=sim.device)
-        root_state[:, 3:7] = torch.tensor([1.0, 0.0, 0.0, 0.0], device=sim.device) 
-        root_state[:, 7:13] = 0.0 
+    # Step sim for a few frames (ONLY ONCE for the whole batch!)
+    for _ in range(20):
+        robot.write_root_pose_to_sim(root_state[:, :7])
+        robot.write_root_velocity_to_sim(root_state[:, 7:])
         
-        robot.reset()
-        scene.reset()
-
-        # step sim for a few frames
-        for _ in range(20):
-            robot.write_root_pose_to_sim(root_state[:, :7])
-            robot.write_root_velocity_to_sim(root_state[:, 7:])
-            
-            scene.write_data_to_sim()
-            sim.step(render=True)
-            
-            # Update the scene (which updates the camera and multiranger)
-            scene.update(sim.get_physics_dt())
-
-        sim.render()
+        scene.write_data_to_sim()
+        sim.step(render=True)
         scene.update(sim.get_physics_dt())
 
-        # taking picture
-        images = scene["camera"].data.output["rgb"]
+    sim.render()
+    scene.update(sim.get_physics_dt())
+
+    # Extract batched camera images
+    images = scene["camera"].data.output["rgb"]
+    glob_img = scene["glob_cam"].data.output["rgb"]
+    
+    # Extract batched sensor data
+    ranges = scene["multiranger"].data.ranges
+
+    # Loop over each environment to log data and save images
+    for env_idx in range(num_drones):
+        pos = actual_pos[env_idx]
+
+        # Save image for this specific environment
         if images is not None:
-                img_np = images[0].cpu().numpy()
-                img = Image.fromarray(img_np.astype('uint8')).convert("RGB")
-                
-                img.save(f"{save_dir}/test_{idx+1}_view.png")
+            img_np = images[env_idx].cpu().numpy()
+            img = Image.fromarray(img_np.astype('uint8')).convert("RGB")
+            img.save(f"{save_dir}/env_{env_idx}_view.png")
 
-        # Read the actual sensor data
-        ranges = scene["multiranger"].data.ranges
-
-        meas_f = float(ranges[0, 0].item())
-        meas_b = float(ranges[0, 1].item())
-        meas_l = float(ranges[0, 2].item())
-        meas_r = float(ranges[0, 3].item())
-        meas_d = float(ranges[0, 4].item())
+        if glob_img is not None:
+            img_np = glob_img[env_idx].cpu().numpy()
+            g_img = Image.fromarray(img_np.astype('uint8')).convert("RGB")
+            g_img.save(f"{save_dir}/env_{env_idx}_glob_view.png")
+            
+        # Read the actual sensor data for this environment
+        meas_f = float(ranges[env_idx, 0].item())
+        meas_b = float(ranges[env_idx, 1].item())
+        meas_l = float(ranges[env_idx, 2].item())
+        meas_r = float(ranges[env_idx, 3].item())
+        meas_d = float(ranges[env_idx, 4].item())
 
         # Calculate the mathematically expected distances
         exp_f = 2.0 - pos[0]
@@ -206,33 +215,28 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
             all_measured.append(meas)
             all_errors_mm.append(error)
 
-
-    print("\n[INFO] Validation complete. Generating Plots...")
+    print("\n[INFO] Parallel Validation complete. Generating Plots...")
 
     # GENERATE VALIDATION PLOTS
     if len(all_expected) > 0:
-        # Dynamically calculate grid size based on number of tests
-        num_tests = len(test_positions)
         cols = 3
-        # Add 1 to num_tests to account for the Map, then calculate required rows
-        rows = math.ceil((num_tests + 1) / cols) 
+        rows = math.ceil((num_drones + 1) / cols) 
         
-        # Create the grid of subplots
         fig, axs = plt.subplots(rows, cols, figsize=(20, 6 * rows))
-        axs = axs.flatten() # Flatten the 2D array of axes to easily iterate through them
+        axs = axs.flatten()
 
-        # PLOT 1: Top-Down Spatial Map (Always in the top-left corner) ---
+        # PLOT 1: Top-Down Spatial Map
         ax_map = axs[0]
         ax_map.plot([-2, 2, 2, -2, -2], [-2, -2, 2, 2, -2], 'k-', linewidth=3, label='Concrete Walls')
         
-        x_coords = [pos[0] for pos in test_positions]
-        y_coords = [pos[1] for pos in test_positions]
-        z_coords = [pos[2] for pos in test_positions]
+        x_coords = [pos[0] for pos in actual_pos]
+        y_coords = [pos[1] for pos in actual_pos]
+        z_coords = [pos[2] for pos in actual_pos]
         
         ax_map.scatter(x_coords, y_coords, color='red', s=100, edgecolors='black', zorder=3, label='Drone Positions')
         
         for i, (x, y, z) in enumerate(zip(x_coords, y_coords, z_coords)):
-            ax_map.annotate(f"T{i+1}\nZ={z}m", (x, y), textcoords="offset points", xytext=(8,8), ha='left', fontsize=10, weight='bold')
+            ax_map.annotate(f"Env {i}\nZ={z}m", (x, y), textcoords="offset points", xytext=(8,8), ha='left', fontsize=10, weight='bold')
 
         ax_map.set_title('Top-Down Map: Validation Coordinates')
         ax_map.set_xlabel('X Position (meters)')
@@ -243,15 +247,14 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
         ax_map.grid(True, linestyle='--', alpha=0.4)
         ax_map.legend(loc='upper left', fontsize='small', framealpha=0.8)
 
-        # PLOTS 2 to N: Individual Test Charts ---
+        # PLOTS 2 to N: Individual Test Charts
         directions = ["Front", "Back", "Left", "Right", "Down"]
         x_pos = np.arange(len(directions))
-        width = 0.35 # Width of the bars
+        width = 0.35 
 
-        for i in range(num_tests):
-            ax = axs[i + 1] # Shift index by 1 to skip the Map
+        for i in range(num_drones):
+            ax = axs[i + 1] 
             
-            # Slice the flat arrays to grab only the 5 data points for THIS specific test
             start_idx = i * 5
             end_idx = start_idx + 5
             
@@ -259,7 +262,6 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
             meas_vals = all_measured[start_idx:end_idx]
             err_vals_mm = all_errors_mm[start_idx:end_idx]
 
-            # Primary Axis (Left) - Expected vs Measured in Meters
             rects1 = ax.bar(x_pos - width/2, exp_vals, width, label='Expected (m)', color='royalblue', edgecolor='black')
             rects2 = ax.bar(x_pos + width/2, meas_vals, width, label='Measured (m)', color='darkorange', edgecolor='black')
             
@@ -267,33 +269,30 @@ def run_simulator(sim: sim_utils.SimulationContext, scene: InteractiveScene):
             ax.set_xticks(x_pos)
             ax.set_xticklabels(directions)
             
-            # Secondary Axis (Right) - Error in Millimeters
             ax2 = ax.twinx()
             ax2.plot(x_pos, err_vals_mm, color='red', marker='o', linestyle='dashed', linewidth=2, markersize=8, label='Error (mm)')
             ax2.set_ylabel('Error (millimeters)', color='red', weight='bold')
             ax2.tick_params(axis='y', labelcolor='red')
 
-            # Formatting
-            ax.set_title(f'Test {i+1} Measurements\n(X={test_positions[i][0]}, Y={test_positions[i][1]}, Z={test_positions[i][2]})')
+            ax.set_title(f'Env {i} Measurements\n(X={actual_pos[i][0]}, Y={actual_pos[i][1]}, Z={actual_pos[i][2]})')
             ax.grid(axis='y', linestyle=':', alpha=0.6)
             
-            # Combine the legends from both axes and put them below the chart
             lines, labels = ax.get_legend_handles_labels()
             lines2, labels2 = ax2.get_legend_handles_labels()
             ax.legend(lines + lines2, labels + labels2, loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3)
 
-        for j in range(num_tests + 1, len(axs)):
+        for j in range(num_drones + 1, len(axs)):
             fig.delaxes(axs[j])
 
         plt.tight_layout()
-        plt.subplots_adjust(bottom=0.15) # Give extra room at the bottom for the legends
-        plt.savefig(f"{save_dir}/wall_distance_demo.png")
-        print("[INFO] Plot saved to wall_distance_demo.png!\n")
+        plt.subplots_adjust(bottom=0.15) 
+        plt.savefig(f"{save_dir}/parallel_validation_demo.png")
+        print("[INFO] Plot saved to parallel_validation_demo.png!\n")
         
 def main():
     sim_cfg = sim_utils.SimulationCfg(dt=0.005, device=args_cli.device)
     sim = sim_utils.SimulationContext(sim_cfg)
-    sim.set_camera_view(eye=[0.0, -0.01, 8.0], target=[0.0, 0.0, 0.0]) # Top-down view
+    sim.set_camera_view(eye=[0.0, -0.01, 8.0], target=[0.0, 0.0, 0.0]) 
     
     scene_cfg = ValidationSceneCfg(num_envs=args_cli.num_envs, env_spacing=6.0)
     scene = InteractiveScene(scene_cfg)
