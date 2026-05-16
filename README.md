@@ -25,14 +25,12 @@ pip install -e .
 ```
    so that the repositories packages can be accessed from anywhere (e.g. the numpy libraries)
 
-### 2. Key Features
-* **Realistic Range Clamping:** All sensor distance measurements are strictly clamped to a maximum of 4.0 meters, accurately mirroring the physical hardware limits of the real VL53L1X ToF sensors.
-* **Accurate Beam Spread (FoV):** Unlike standard infinitely thin raycasters, this simulation models the physical conical light spread of ToF sensors. 
-* **Modular Resolution:** The Field of View (FoV) and the number of individual rays per cone are fully modular. Users can tune these parameters to easily balance high-fidelity detection (preventing the drone from missing thin obstacles) with simulation performance.
-* **Universal Collision Detection:** Powered by the `MultiMeshRayCaster`, the sensors seamlessly detect both computationally efficient primitive shapes (spheres, cubes) and complex, triangulated 3D meshes.
-* **Dynamic Object Tracking:** The sensors continuously track both static environmental obstacles (walls, floors) and dynamic, moving objects in real-time.
+## 2. Key Features
+* **Realistic Behaviour:** Since true photon time-of-flight cannot be directly simulated, the VL53L1X sensor behavior is replicated by casting a multi-ray cone against the environment meshes. The system calculates a center-weighted average of the hit distances, which is then strictly clamped to the hardware's 4.0-meter limit
+* **Modular Resolution:** The Field of View (FoV) and the number of individual rays per cone are fully modular in the config classes. The actual VL53L1X has a FoV range of 27°-15°.
+* **Universal Collision Detection:** Powered by the `MultiMeshRayCaster`, the sensors seamlessly detect both computationally efficient primitive shapes (spheres, cubes) and complex, triangulated 3D meshes as well as static and dynamic meshes.
 
-### 3. Repository Structure
+## 3. Repository Structure
 Project is strictly organized to separate core logic, execution scripts, and documentation:
 
 ```
@@ -52,23 +50,17 @@ MultirangerDeck/
 │
 ├── scripts/                       # Executable Isaac Lab Scenarios
 │   ├── demo1_wall_validation.py   # Static teleportation accuracy test
-│   ├── demo2_wall_validation.py   # Dynamic perfect-hover wall test
-│   ├── demo3_pyramid_hover.py     # Forward cruise and altitude test
+│   ├── demo2_pyramid_hover.py     # Dynamic terrain following and altitude test
+│   ├── demo3_pointcloud.py        # Hardware-Truth Point Cloud Mapping
 │   │
 │   └── quacopter_control/         # Flight controller logic
-│       └── flight_controller.py   # Cascaded PID (Altitude & Pitch)
+│       └── flight_controller.py   # Cascaded PID (Altitude, Pitch, Roll, Yaw)
 │
 └── multimedia/                    # Output telemetry, plots, and videos
-    ├── demo1/
-    │   └── wall_distance_demo.png
-    ├── demo2/
-    │   ├── wall_distance_demo.png
-    │   └── wall_distance_demo_plt.png
-    └── demo3/
-        └── pyramid_hover_telemetry.png
+    ├── ...                         # photos and videos of the demos
 ```
 
-### 4. Usage
+## 4. Usage
 We have prepared three progressive demonstrations to validate the sensor. To run them, open your terminal, activate the Isaac Lab environment, and execute the scripts from the repository root.
 
 1.  Navigate to the root of isaac lab directory:
@@ -77,22 +69,23 @@ We have prepared three progressive demonstrations to validate the sensor. To run
 2. To run the demo simmulation:
 
     -Demo 1: Basic Wall Validation
-    Tests the sensor's basic directional measurements in a static environment.
+    Tests the sensor's basic directional measurements in multiple static environments across multiple drone spawn coordinates.
 
     `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo1_wall_validation.py --headless --enable_cameras`
+![Validation Map](multimedia/demo1/parallel_validation_demo.png)
+    -Demo 2: Dynamic Pyramid Hover (Terrain Following)
+A dynamic simulation where a drone uses the Z-down sensor reading in a control loop to maintain a stable target altitude over uneven, multi-level pyramidal terrain.
 
-    -Demo 2: Offset Wall Algorithm Validation
-    Demonstrates the sensor correctly returning the closest hit within a generated 10-ray cone.
-
-    `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo2_wall_validation.py --headless --enable_cameras`
-
-    -Demo 3: Dynamic Pyramid Hover (Terrain Following)
-    A dynamic simulation where a drone uses the Z-down sensor reading in a control loop to maintain a stable 30cm altitude over uneven pyramidal terrain.
+    `./isaaclab.sh -p /path_to_your_folder/MultirangerDeck/scripts/demo2_pyramid_hover.py --headless --enable_cameras`
+![Pyramid Hover Plot](multimedia/demo2/pyramid_surfing.png)
+    -Demo 3: Hardware-Truth Point Cloud Mapping
+A flight mission down a corridor where the drone uses its real-time 1D multiranger readings and its global orientation quaternion to generate and plot an accurate 2D map (point cloud) of the environment.
    
-    `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo3_pyramid_hover.py --headless --enable_cameras`
+    `./isaaclab.sh -p /path_to_your_folder/MultirangerDeck/scripts/demo3_pointcloud.py --headless --enable_cameras`
+![Point Cloud Demo](multimedia/demo3/demo_pointcloud.png)
 
-
-### 5. Credits
+## 5. Credits
+Authors: Alexandru Zaporojanu, Luca Samorì, and Tommaso Tieri.
 Framework: Built using the NVIDIA Isaac Lab framework.
 
 Hardware Inspiration: Logic and configuration inspired by the Bitcraze Crazyflie Multiranger Deck.
