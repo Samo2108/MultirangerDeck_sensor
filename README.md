@@ -72,18 +72,27 @@ We have prepared three progressive demonstrations to validate the sensor. To run
     Tests the sensor's basic directional measurements in multiple static environments across multiple drone spawn coordinates.
 
     `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo1_wall_validation.py --headless --enable_cameras`
-![Validation Map](multimedia/demo1/parallel_validation_demo.png)
+<p align="center">
+  <img src="multimedia/demo1/Picture6.jpg" width="48%" />
+  <img src="multimedia/demo1/parallel_validation_demo.png" width="48%" /> 
+</p>
 
     -Demo 2: Dynamic Pyramid Hover (Terrain Following)
 A dynamic simulation where a drone uses the Z-down sensor reading in a control loop to maintain a stable target altitude over uneven, multi-level pyramidal terrain.
 
     `./isaaclab.sh -p /path_to_your_folder/MultirangerDeck/scripts/demo2_pyramid_hover.py --headless --enable_cameras`
-![Pyramid Hover Plot](multimedia/demo2/pyramid_surfing.png)
+<p align="center">
+  <img src="multimedia/demo2/Media1.gif" width="48%" />
+  <img src="multimedia/demo2/pyramid_surfing.png" width="48%" /> 
+</p>
     -Demo 3: Hardware-Truth Point Cloud Mapping
 A flight mission down a corridor where the drone uses its real-time 1D multiranger readings and its global orientation quaternion to generate and plot an accurate 2D map (point cloud) of the environment.
    
     `./isaaclab.sh -p /path_to_your_folder/MultirangerDeck/scripts/demo3_pointcloud.py --headless --enable_cameras`
-![Point Cloud Demo](multimedia/demo3/demo_pointcloud.png)
+<p align="center">
+  <img src="multimedia/demo3/Media2.gif" width="48%" />
+  <img src="multimedia/demo3/demo_pointcloud.png" width="48%" /> 
+</p>
 
 ## 5. Credits
 Authors: Alexandru Zaporojanu, Luca Samorì, and Tommaso Tieri.
