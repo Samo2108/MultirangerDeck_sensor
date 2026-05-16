@@ -73,6 +73,7 @@ We have prepared three progressive demonstrations to validate the sensor. To run
 
     `./isaaclab.sh -p /path to your folder/MultirangerDeck/scripts/demo1_wall_validation.py --headless --enable_cameras`
 ![Validation Map](multimedia/demo1/parallel_validation_demo.png)
+!C:/Users/lucas/Downloads/Media1.gif
     -Demo 2: Dynamic Pyramid Hover (Terrain Following)
 A dynamic simulation where a drone uses the Z-down sensor reading in a control loop to maintain a stable target altitude over uneven, multi-level pyramidal terrain.
 
