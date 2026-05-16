@@ -96,6 +96,7 @@ A flight mission down a corridor where the drone uses its real-time 1D multirang
 
 ## 5. Credits
 Authors: Alexandru Zaporojanu, Luca Samorì, and Tommaso Tieri.
+
 Framework: Built using the NVIDIA Isaac Lab framework.
 
 Hardware Inspiration: Logic and configuration inspired by the Bitcraze Crazyflie Multiranger Deck.
